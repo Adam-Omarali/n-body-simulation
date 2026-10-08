@@ -1,0 +1,5 @@
+.vscode
+libraylib.a
+raylib.h
+raymath.h
+build
