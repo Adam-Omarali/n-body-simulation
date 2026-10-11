@@ -1,6 +1,6 @@
 CXX := clang++
-CPPFLAGS := -Isrc/include
-CXXFLAGS := -std=c++20 -Wall -Wextra -Wpedantic
+CPPFLAGS := -Iinclude -isystem include/raylib
+CXXFLAGS := -std=c++20 -g -O0 -Wall -Wextra -Wpedantic
 LDLIBS := lib/libraylib.a \
 	-framework CoreVideo \
 	-framework IOKit \
@@ -13,8 +13,8 @@ LDLIBS := lib/libraylib.a \
 default: main
 	./build/main
 
-main: src/main.cpp lib/libraylib.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) src/main.cpp -o build/$@ $(LDLIBS)
+main: src/main.cpp src/renderer.cpp src/simulator.cpp lib/libraylib.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) src/main.cpp src/renderer.cpp src/simulator.cpp -o build/$@ $(LDLIBS)
 
 clean:
 	rm -f main
