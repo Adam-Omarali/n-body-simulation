@@ -3,7 +3,9 @@
 
 #include <raylib.h>
 #include <nbody/body.hpp>
+#include <nbody/conservation_monitor.hpp>
 #include <span>
+#include <deque>
 
 class Renderer {
     public:

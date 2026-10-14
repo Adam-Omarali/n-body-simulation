@@ -5,10 +5,15 @@
 #include <iostream>
 #include <nbody/renderer.hpp>
 #include <nbody/simulator.hpp>
+#include <nbody/conservation_monitor.hpp>
+#include <nbody/diagnostic_csv_writer.hpp>
 #include <random>
+#include <string>
 
 std::random_device rd;   // Provides the seed
 std::mt19937 rng(rd());  // Random-number engine
+
+std::string dianostic_path = "out/data.csv";
 
 
 int main()
@@ -31,12 +36,31 @@ int main()
 
     Renderer renderer = Renderer(time_step);
     Simulator simulator{std::move(bodies)};
+    ConservationMonitor conservation_monitor;
+    DiagnosticsCsvWriter writer(dianostic_path);
+    std::size_t step = 0;
+    double simulation_time = 0.0;
+
+    conservation_monitor.observe(simulation_time, simulator.bodies());
 
     while (!WindowShouldClose())
     {
         simulator.step(time_step);
+        simulation_time += time_step;
+        ++step;
+        if (step % 10 == 0) {
+            conservation_monitor.observe(simulation_time, simulator.bodies());
+            writer.write({
+                simulation_time,
+                conservation_monitor.latest_energy_err(),
+                conservation_monitor.latest_linear_momentum_err(),
+                conservation_monitor.latest_angular_momentum_err()
+            });
+        }
+        if (step % 1000 == 0){
+            writer.flush();
+        }
         renderer.draw(simulator.bodies());
-
     }
 
     CloseWindow();

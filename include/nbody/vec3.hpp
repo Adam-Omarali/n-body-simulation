@@ -10,7 +10,7 @@ struct Vec3 {
     float y;
     float z;
 
-    Vec3 operator+(Vec3 other){
+    Vec3 operator+(Vec3 other) const{
         return {
             x + other.x,
             y + other.y,
@@ -23,21 +23,21 @@ struct Vec3 {
         z = z + other.z;
         return {x, y, z};
     };
-    Vec3 operator-(Vec3 other){
+    Vec3 operator-(Vec3 other) const{
         return {
             x - other.x,
             y - other.y,
             z - other.z
         };
     };
-    Vec3 operator*(float scale){
+    Vec3 operator*(float scale) const{
         return {
             x * scale,
             y * scale,
             z * scale
         };
     };
-    Vec3 operator/(float scale){
+    Vec3 operator/(float scale) const{
         return {
             x / scale,
             y / scale,
@@ -61,6 +61,14 @@ struct Vec3 {
 
 inline float dot(const Vec3& v1, const Vec3& v2){
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+}
+
+inline Vec3 cross(const Vec3& v1, const Vec3& v2){
+    return {
+        v1.y * v2.z - v2.y * v1.z, 
+        -(v1.x * v2.z - v2.x * v1.z),
+        v1.x * v2.y - v2.x * v2.y
+    };
 }
 
 #endif

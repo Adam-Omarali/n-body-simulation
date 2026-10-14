@@ -35,8 +35,12 @@ void Renderer::draw(std::span<const Body> bodies) {
         // DrawTria(positions[index], positions[(index + 1) % positions.size()] - positions[index], RED);
     }
 
+    bool render_arrows = bodies.size() < 20;
+
     for (std::size_t i=0; i < bodies.size(); i++) {
         DrawSphere(bodies[i].position.to_raylib_vec3(), 0.1, YELLOW);
+
+        if (!render_arrows) continue;
 
         float velocity_scale_factor = 2;
     
