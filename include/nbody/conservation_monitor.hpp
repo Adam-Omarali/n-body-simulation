@@ -9,7 +9,7 @@
 
 class ConservationMonitor{
     public:
-        void observe(double time, std::span<const Body> bodies);
+        void observe(std::span<const Body> bodies);
         float latest_energy_err(){
             return energy_.current_error();
         };

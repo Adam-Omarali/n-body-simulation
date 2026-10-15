@@ -7,6 +7,9 @@
 #include <nbody/simulator.hpp>
 #include <nbody/conservation_monitor.hpp>
 #include <nbody/diagnostic_csv_writer.hpp>
+#include <nbody/symplectic_euler.hpp>
+#include <nbody/leapfrog.hpp>
+#include <nbody/direct_gravity.hpp>
 #include <random>
 #include <string>
 
@@ -35,13 +38,15 @@ int main()
     }
 
     Renderer renderer = Renderer(time_step);
-    Simulator simulator{std::move(bodies)};
+    DirectGravity force_solver;
+    Leapfrog position_solver;
+    Simulator simulator{std::move(bodies), position_solver, force_solver};
     ConservationMonitor conservation_monitor;
     DiagnosticsCsvWriter writer(dianostic_path);
     std::size_t step = 0;
     double simulation_time = 0.0;
 
-    conservation_monitor.observe(simulation_time, simulator.bodies());
+    conservation_monitor.observe(simulator.bodies());
 
     while (!WindowShouldClose())
     {
@@ -49,7 +54,7 @@ int main()
         simulation_time += time_step;
         ++step;
         if (step % 10 == 0) {
-            conservation_monitor.observe(simulation_time, simulator.bodies());
+            conservation_monitor.observe(simulator.bodies());
             writer.write({
                 simulation_time,
                 conservation_monitor.latest_energy_err(),

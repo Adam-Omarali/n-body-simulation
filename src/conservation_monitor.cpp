@@ -5,7 +5,7 @@
 #include <cmath>
 
 
-void ConservationMonitor::observe(double time, std::span<const Body> bodies){
+void ConservationMonitor::observe(std::span<const Body> bodies){
     //calculate KE, Angular Momentum
     float kinetic_energy = 0;
     float potential_energy = 0;
