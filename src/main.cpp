@@ -10,6 +10,7 @@
 #include <nbody/symplectic_euler.hpp>
 #include <nbody/leapfrog.hpp>
 #include <nbody/direct_gravity.hpp>
+#include <nbody/bhtree.hpp>
 #include <random>
 #include <string>
 
@@ -17,6 +18,8 @@ std::random_device rd;   // Provides the seed
 std::mt19937 rng(rd());  // Random-number engine
 
 std::string dianostic_path = "out/data.csv";
+
+float theta = 0;
 
 
 int main()
@@ -28,7 +31,7 @@ int main()
     float max_position = 2;
     float max_velocity = 0.5;
     float max_mass = 10;
-    u_long n_bodies = 2;
+    u_long n_bodies = 200;
     std::vector<Body> bodies{
         n_bodies
     };
@@ -38,7 +41,7 @@ int main()
     }
 
     Renderer renderer = Renderer(time_step);
-    DirectGravity force_solver;
+    BHTree force_solver(theta);
     Leapfrog position_solver;
     Simulator simulator{std::move(bodies), position_solver, force_solver};
     ConservationMonitor conservation_monitor;

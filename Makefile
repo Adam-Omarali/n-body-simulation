@@ -13,8 +13,8 @@ LDLIBS := lib/libraylib.a \
 default: main
 	./build/main
 
-main: src/main.cpp src/renderer.cpp src/conservation_monitor.cpp src/direct_gravity.cpp lib/libraylib.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) src/main.cpp src/renderer.cpp src/conservation_monitor.cpp src/direct_gravity.cpp -o build/$@ $(LDLIBS)
+main: src/main.cpp src/renderer.cpp src/conservation_monitor.cpp src/direct_gravity.cpp src/bhtree.cpp lib/libraylib.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) src/main.cpp src/renderer.cpp src/conservation_monitor.cpp src/direct_gravity.cpp src/bhtree.cpp -o build/$@ $(LDLIBS)
 
 clean:
 	rm -f main

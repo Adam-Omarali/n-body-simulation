@@ -36,9 +36,11 @@ void Renderer::draw(std::span<const Body> bodies) {
     }
 
     bool render_arrows = bodies.size() < 20;
+    double radius = 0.1;
+    if (!render_arrows) radius = 0.05;
 
     for (std::size_t i=0; i < bodies.size(); i++) {
-        DrawSphere(bodies[i].position.to_raylib_vec3(), 0.1, YELLOW);
+        DrawSphere(bodies[i].position.to_raylib_vec3(), radius, YELLOW);
 
         if (!render_arrows) continue;
 
