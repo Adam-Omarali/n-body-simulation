@@ -14,8 +14,7 @@ struct CubeQuadrant{
                 (p.y > centre.y ? 1 : 0) << 1 | 
                 (p.z > centre.z ? 1 : 0) << 2;
     }
-    CubeQuadrant child_quadrant(const Vec3& p) const {
-        int octant = octant_for(p);
+    CubeQuadrant child_quadrant(uint8_t octant) const {
         Vec3 new_centre{};
         float new_half_width = half_width / 2;
         if ((octant & 0b001) == 0){

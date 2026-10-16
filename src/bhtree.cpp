@@ -32,12 +32,16 @@ void BHTree::build(std::span<const Body> bodies){
     for (size_t i = 0; i < bodies.size(); i++){
         insert(i, 0, bodies);
     }
+    for (size_t i = 0; i < nodes_.size(); i++){
+        if (nodes_[i].is_empty()) continue;
+        nodes_[i].centre_of_mass = nodes_[i].centre_of_mass / nodes_[i].mass;
+    }
 }
 
-void BHTree::insert(std::size_t body_idx, std::size_t node_idx, std::span<const Body> bodies){
+void BHTree::insert(std::uint32_t body_idx, std::uint32_t node_idx, std::span<const Body> bodies){
     if (nodes_[node_idx].is_empty()) {
         nodes_[node_idx].mass = bodies[body_idx].mass;
-        nodes_[node_idx].weighted_mass_positon = bodies[body_idx].position * bodies[body_idx].mass;
+        nodes_[node_idx].centre_of_mass = bodies[body_idx].position * bodies[body_idx].mass;
         nodes_[node_idx].body_idx = body_idx;
         return;
     }
@@ -49,56 +53,61 @@ void BHTree::insert(std::size_t body_idx, std::size_t node_idx, std::span<const 
     //encountered an external body (leaf), need to make current node an internal node and move both children down
     size_t leaf_body_idx = nodes_[node_idx].body_idx;
     nodes_[node_idx].mass = 0;
-    nodes_[node_idx].weighted_mass_positon = {};
+    nodes_[node_idx].centre_of_mass = {};
     move_body_down(leaf_body_idx, node_idx, bodies);
     move_body_down(body_idx, node_idx, bodies);
 }
 
-void BHTree::move_body_down(std::size_t body_idx, std::size_t parent_idx, std::span<const Body> bodies){
+void BHTree::move_body_down(std::uint32_t body_idx, std::uint32_t parent_idx, std::span<const Body> bodies){
     Body b = bodies[body_idx];
-    nodes_[parent_idx].body_idx = -1;
+    nodes_[parent_idx].body_idx = no_body;
     nodes_[parent_idx].mass += b.mass;
-    nodes_[parent_idx].weighted_mass_positon += b.position * b.mass;
-    int octant = nodes_[parent_idx].cube.octant_for(b.position);
-    if (nodes_[parent_idx].children[octant] == no_node) {
-        CubeQuadrant cq = nodes_[parent_idx].cube.child_quadrant(b.position);
-        nodes_.push_back(BHNode{cq});
-        nodes_[parent_idx].children[octant] = nodes_.size() - 1;
-    } else {
-        if (nodes_[nodes_[parent_idx].children[octant]].cube.half_width < COLLISION_HALF_WIDTH){
-            nodes_[nodes_[parent_idx].children[octant]].mass += b.mass;
-            nodes_[nodes_[parent_idx].children[octant]].weighted_mass_positon += b.position * b.mass;
-            return;
+    nodes_[parent_idx].centre_of_mass += b.position * b.mass;
+
+    //create all children for contigious access and to only store first child pointer
+    if (nodes_[parent_idx].first_child == no_node){
+        nodes_[parent_idx].first_child = nodes_.size();
+        for (uint8_t i = 0; i < 8; i++){
+            CubeQuadrant cq = nodes_[parent_idx].cube.child_quadrant(i);
+            nodes_.push_back(BHNode(cq));
         }
     }
-    return insert(body_idx, nodes_[parent_idx].children[octant], bodies);
+
+    int octant = nodes_[parent_idx].cube.octant_for(b.position);
+    if (!nodes_[nodes_[parent_idx].first_child + octant].is_empty() && 
+        nodes_[nodes_[parent_idx].first_child + octant].cube.half_width < COLLISION_HALF_WIDTH){
+        nodes_[nodes_[parent_idx].first_child + octant].mass += b.mass;
+        nodes_[nodes_[parent_idx].first_child + octant].centre_of_mass += b.position * b.mass;
+        return;
+    }
+    return insert(body_idx, nodes_[parent_idx].first_child + octant, bodies);
 }
 
 void BHTree::calculate(std::span<const Body> bodies, std::span<Vec3> accelerations){
     build(bodies);
     for (size_t i = 0; i < bodies.size(); i++){
-        accelerations[i] = accel_from(nodes_[0], i, bodies);
+        accelerations[i] = accel_from(0, i, bodies);
     }
 }
 
-Vec3 BHTree::accel_from(BHNode node, std::size_t body_idx, std::span<const Body> bodies){
+Vec3 BHTree::accel_from(std::uint32_t node_idx, std::uint32_t body_idx, std::span<const Body> bodies){
+    BHNode& node = nodes_[node_idx];
     if (node.is_empty()) return{};
     if (node.body_idx == body_idx) return{};
-    Vec3 r = (node.weighted_mass_positon / node.mass) - bodies[body_idx].position; //remember a leaf can be combined bodies
+    Vec3 r = node.centre_of_mass - bodies[body_idx].position; //remember a leaf can be combined bodies
     float r_mag = r.magnitude();
     if (node.is_leaf()){ 
         float r_squared_softened = r_mag * r_mag + SOFTENING_LENGTH * SOFTENING_LENGTH;
-        return r * (G * node.mass / (std::pow(r_squared_softened, 1.5)));
+        return r * (G * node.mass / (r_squared_softened * sqrt(r_squared_softened)));
     }
     float s = node.cube.half_width * 2;
     if (s/r_mag < theta_){
         float r_squared_softened = r_mag * r_mag + SOFTENING_LENGTH * SOFTENING_LENGTH;
-        return r * (G * node.mass / (std::pow(r_squared_softened, 1.5)));
+        return r * (G * node.mass / (r_squared_softened * sqrt(r_squared_softened)));
     }
     Vec3 accel{};
-    for (size_t i = 0; i < node.children.size(); i++){
-        if (node.children[i] == no_node) continue;
-        accel += accel_from(nodes_[node.children[i]], body_idx, bodies);
+    for (size_t i = 0; i < 8; i++){
+        accel += accel_from(node.first_child + i, body_idx, bodies);
     }
     return accel;
 }

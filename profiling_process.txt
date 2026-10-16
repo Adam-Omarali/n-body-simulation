@@ -1,0 +1,32 @@
+profiling is run via samply
+
+n=50000 theta=0.5 iterations=20
+
+Run #1: 9.1s
+Most used functions:
+accel_from 50%
+is_empty 20%
+math.pow (split across many)
+
+Run #2: 6.3s
+Replaced math.pow with r * r * sqrt(r)
+accel_from 72%
+is_empty 25%
+
+Run #3: 5.1s
+Replaced is_empty loop over children with boolean on every node for quicker look up speed
+accel_from 77%
+is_empty 11%
+
+Run #4: 3.7s
+Changel accel_from to take node_idx rather than a cody of the node object
+accel_from 73% (split across two for some reason)
+- each row points to a different file, one is the header and the other is cpp file. but what's intensive in the header file? memory access on nodes_ can be intensive
+sqrt 7.3%
+is_empty 4.3%
+
+Run #5: 3.5s
+Change children array on btree to use type uint_32 rather than size_t to save memory
+
+RUn #6: 3.4s
+Change Node to store centre of mass by looping through after build to divide by total mass. This avoids dividing on every accel_from

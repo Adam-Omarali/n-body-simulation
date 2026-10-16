@@ -31,7 +31,7 @@ int main()
     float max_position = 2;
     float max_velocity = 0.5;
     float max_mass = 10;
-    u_long n_bodies = 200;
+    u_long n_bodies = 800;
     std::vector<Body> bodies{
         n_bodies
     };
