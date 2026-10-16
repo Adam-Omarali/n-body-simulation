@@ -10,7 +10,8 @@ static constexpr std::uint32_t no_body = std::numeric_limits<std::uint32_t>::max
 
 struct BHTree {
     public:
-        BHTree(float theta): theta_(theta){};
+        // num_threads = 0 uses every hardware thread
+        BHTree(float theta, unsigned num_threads = 0): theta_(theta), num_threads_(num_threads){};
         void build(std::span<const Body> bodies);
         void insert(std::uint32_t body_idx, std::uint32_t node_idx, std::span<const Body> bodies);
         void calculate(std::span<const Body> bodies, std::span<Vec3> accelerations);
@@ -36,9 +37,11 @@ struct BHTree {
             }
         };
         float theta_;
+        unsigned num_threads_;
         std::vector<BHNode> nodes_;
-        void move_body_down(std::uint32_t body_idx, std::uint32_t parent_idx, std::span<const Body> bodies);        
-        Vec3 accel_from(std::uint32_t node_idx, std::uint32_t body_idx, std::span<const Body> bodies);
+        void move_body_down(std::uint32_t body_idx, std::uint32_t parent_idx, std::span<const Body> bodies);
+        // const: read-only on the tree, so many threads can call it at once
+        Vec3 accel_from(std::uint32_t node_idx, std::uint32_t body_idx, std::span<const Body> bodies) const;
 };
 
 #endif

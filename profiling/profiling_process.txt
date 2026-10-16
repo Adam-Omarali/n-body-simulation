@@ -30,3 +30,8 @@ Change children array on btree to use type uint_32 rather than size_t to save me
 
 RUn #6: 3.4s
 Change Node to store centre of mass by looping through after build to divide by total mass. This avoids dividing on every accel_from
+
+Run #7: 3.0s
+Change children to all be instantiated at once so only first child pointer needs to be stored on BHNode. 
+This reduces the size of BHNode to ~40bytes so more can be stored in L1 cache which takes around 4 cycles to access.
+L2 takes around 15 cycles and main memory around 100+ cycles.

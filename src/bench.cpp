@@ -1,7 +1,7 @@
 // Benchmarks DirectGravity vs BHTree force calculation.
 //
 //   ./build/bench                       sweep N and theta, write out/bench.csv
-//   ./build/bench profile <N> <theta> <iters>
+//   ./build/bench profile <N> <theta> <iters> [threads, 0 = all]
 //                                       run only BHTree in a loop, for the profiler
 
 #include <nbody/body.hpp>
@@ -93,15 +93,16 @@ int sweep(){
     return 0;
 }
 
-int profile(std::size_t n, float theta, std::size_t iters){
+int profile(std::size_t n, float theta, std::size_t iters, unsigned threads){
     std::vector<Body> bodies = make_bodies(n);
     std::vector<Vec3> accel(n);
-    BHTree tree(theta);
+    BHTree tree(theta, threads);
     auto start = std::chrono::steady_clock::now();
     for (std::size_t i = 0; i < iters; i++) tree.calculate(bodies, accel);
     auto end = std::chrono::steady_clock::now();
     double ms = std::chrono::duration<double, std::milli>(end - start).count();
-    std::cout << "n=" << n << " theta=" << theta << " " << ms / iters << " ms/iter\n";
+    std::cout << "n=" << n << " theta=" << theta << " threads=" << (threads ? std::to_string(threads) : "all")
+              << " " << ms / iters << " ms/iter\n";
     return 0;
 }
 
@@ -110,7 +111,8 @@ int main(int argc, char** argv){
         std::size_t n = argc > 2 ? std::stoul(argv[2]) : 50000;
         float theta = argc > 3 ? std::stof(argv[3]) : 0.5f;
         std::size_t iters = argc > 4 ? std::stoul(argv[4]) : 20;
-        return profile(n, theta, iters);
+        unsigned threads = argc > 5 ? std::stoul(argv[5]) : 0;
+        return profile(n, theta, iters, threads);
     }
     return sweep();
 }

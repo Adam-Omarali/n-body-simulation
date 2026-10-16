@@ -1,6 +1,8 @@
 #include <nbody/bhtree.hpp>
 #include <cmath>
 #include <algorithm>
+#include <atomic>
+#include <thread>
 #include <nbody/constants.hpp>
 
 float MINIMUM_HALF_WIDTH = 1;
@@ -85,13 +87,36 @@ void BHTree::move_body_down(std::uint32_t body_idx, std::uint32_t parent_idx, st
 
 void BHTree::calculate(std::span<const Body> bodies, std::span<Vec3> accelerations){
     build(bodies);
-    for (size_t i = 0; i < bodies.size(); i++){
-        accelerations[i] = accel_from(0, i, bodies);
+
+    // tree is read-only from here and each body writes only accelerations[i], so bodies can run in parallel.
+    // threads claim chunks from a shared counter since bodies in dense regions cost more to traverse.
+    const std::size_t n = bodies.size();
+    const std::size_t chunk = 128;
+    unsigned num_threads = num_threads_ ? num_threads_ : std::max(1u, std::thread::hardware_concurrency());
+    std::atomic<std::size_t> next{0};
+
+    auto worker = [&](){
+        while (true){
+            std::size_t start = next.fetch_add(chunk);
+            if (start >= n) break;
+            std::size_t end = std::min(start + chunk, n);
+            for (std::size_t i = start; i < end; i++){
+                accelerations[i] = accel_from(0, i, bodies);
+            }
+        }
+    };
+
+    std::vector<std::thread> threads;
+    for (unsigned t = 0; t < num_threads; t++){
+        threads.emplace_back(worker);
+    }
+    for (std::thread& t : threads){
+        t.join();
     }
 }
 
-Vec3 BHTree::accel_from(std::uint32_t node_idx, std::uint32_t body_idx, std::span<const Body> bodies){
-    BHNode& node = nodes_[node_idx];
+Vec3 BHTree::accel_from(std::uint32_t node_idx, std::uint32_t body_idx, std::span<const Body> bodies) const{
+    const BHNode& node = nodes_[node_idx];
     if (node.is_empty()) return{};
     if (node.body_idx == body_idx) return{};
     Vec3 r = node.centre_of_mass - bodies[body_idx].position; //remember a leaf can be combined bodies
